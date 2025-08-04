@@ -38,9 +38,16 @@
 
         const placasAutorizadas = ['GBV123', 'ABC456', 'XYZ789', 'JPL654'];
 
-        navigator.mediaDevices.getUserMedia({ video: true })
-            .then(stream => video.srcObject = stream)
-            .catch(err => alert("No se pudo acceder a la cámara: " + err));
+        navigator.mediaDevices.getUserMedia({
+            video: { facingMode: { exact: "environment" } }
+        })
+        .then(stream => video.srcObject = stream)
+        .catch(err => {
+            console.warn("No se pudo acceder a la cámara trasera, usando cámara por defecto.");
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(stream => video.srcObject = stream)
+                .catch(err => alert("No se pudo acceder a ninguna cámara: " + err));
+        });
 
         function capturar() {
             const context = canvas.getContext('2d');

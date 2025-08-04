@@ -53,6 +53,9 @@
             const context = canvas.getContext('2d');
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
+
+            // Filtro: convertir a escala de grises y aumentar contraste
+            context.filter = 'grayscale(100%) contrast(200%)';
             context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
             resultado.textContent = "Procesando...";
@@ -60,14 +63,22 @@
             Tesseract.recognize(canvas, 'eng', {
                 logger: m => console.log(m)
             }).then(({ data: { text } }) => {
-                const placaDetectada = text.replace(/[^A-Z0-9]/gi, '').toUpperCase().trim();
-                console.log("Placa detectada:", placaDetectada);
+                let placaDetectada = text.replace(/[^A-Z0-9]/gi, '').toUpperCase().trim();
+                console.log("Texto OCR bruto:", placaDetectada);
 
-                if (placasAutorizadas.includes(placaDetectada)) {
-                    resultado.innerHTML = `✅ Placa <strong>${placaDetectada}</strong> autorizada.`;
-                    resultado.style.color = 'green';
+                // Intentar encontrar formato de placa tipo AAA123
+                const match = placaDetectada.match(/[A-Z]{3}[0-9]{3}/);
+                if (match) {
+                    placaDetectada = match[0];
+                    if (placasAutorizadas.includes(placaDetectada)) {
+                        resultado.innerHTML = `✅ Placa <strong>${placaDetectada}</strong> autorizada.`;
+                        resultado.style.color = 'green';
+                    } else {
+                        resultado.innerHTML = `❌ Placa <strong>${placaDetectada}</strong> no registrada.`;
+                        resultado.style.color = 'red';
+                    }
                 } else {
-                    resultado.innerHTML = `❌ Placa <strong>${placaDetectada}</strong> no registrada.`;
+                    resultado.innerHTML = "❌ No se reconoció una placa válida.";
                     resultado.style.color = 'red';
                 }
             }).catch(err => {

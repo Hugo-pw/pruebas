@@ -1,0 +1,73 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>ControlPark - Verificación de Placas</title>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+        }
+        video, canvas {
+            max-width: 100%%;
+            height: auto;
+            margin-bottom: 10px;
+        }
+        #resultado {
+            font-size: 1.5em;
+            margin-top: 15px;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>ControlPark</h1>
+    <p>Escanea la placa del vehículo</p>
+    <video id="video" autoplay playsinline width="320" height="240"></video><br>
+    <button onclick="capturar()">📷 Capturar</button>
+    <canvas id="canvas" style="display:none;"></canvas>
+    <div id="resultado"></div>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const resultado = document.getElementById('resultado');
+
+        const placasAutorizadas = ['GBV123', 'ABC456', 'XYZ789', 'JPL654'];
+
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => video.srcObject = stream)
+            .catch(err => alert("No se pudo acceder a la cámara: " + err));
+
+        function capturar() {
+            const context = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            resultado.textContent = "Procesando...";
+
+            Tesseract.recognize(canvas, 'eng', {
+                logger: m => console.log(m)
+            }).then(({ data: { text } }) => {
+                const placaDetectada = text.replace(/[^A-Z0-9]/gi, '').toUpperCase().trim();
+                console.log("Placa detectada:", placaDetectada);
+
+                if (placasAutorizadas.includes(placaDetectada)) {
+                    resultado.innerHTML = `✅ Placa <strong>${placaDetectada}</strong> autorizada.`;
+                    resultado.style.color = 'green';
+                } else {
+                    resultado.innerHTML = `❌ Placa <strong>${placaDetectada}</strong> no registrada.`;
+                    resultado.style.color = 'red';
+                }
+            }).catch(err => {
+                resultado.textContent = "Error al procesar la imagen.";
+                console.error(err);
+            });
+        }
+    </script>
+</body>
+</html>
